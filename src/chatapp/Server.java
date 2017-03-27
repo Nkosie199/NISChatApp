@@ -28,7 +28,7 @@ public class Server {
             clientSocket = MyService.accept() ;
         }
         catch(IOException e){
-            System.out.println (e) ;
+            System.out.println("Server setup methods says: "+e) ;
         }
     }
     

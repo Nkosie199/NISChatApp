@@ -19,7 +19,7 @@ public class Client {
             MyClient = new Socket(machineName, portNumber);
         }
         catch (IOException e){
-            System.out.println(e);
+            System.out.println("Client setup methods says: "+e);
         }
     }
     
