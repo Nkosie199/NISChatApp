@@ -11,9 +11,9 @@ import java.net.Socket;
 public class Client {
     Socket MyClient; //stream socket (TCP)
     //String machineName = args[0];
-    public String machineName = "localhost"; //specifies machine name in IP address form
+    public String machineName; //specifies machine name in IP address form
     //int portNumber = Integer.parseInt(args[1]);
-    int portNumber = 8005; //port used to send requests to server < 1023 < 65536
+    int portNumber; //server open port used to send requests to server < 1023 < 65536
     DataInputStream input; //stores server responses
     PrintStream output; //stores message to be sent to server
     
@@ -24,19 +24,22 @@ public class Client {
         
         try{
             MyClient = new Socket(machineName, portNumber);
+            System.out.println("Client socket setup complete!");
         }
         catch (IOException e){
-            System.out.println("Client setup method says: "+e);
+            System.out.println("ERROR: Client setup method says: "+e);
         }
+        
     }
     
     //client processing responses from the server...
     public void dataInputStream(){
         try{
             input = new DataInputStream(MyClient.getInputStream());
+            System.out.println("Client dataInputStream method says: input = "+input);
         }
         catch(Exception e){
-            System.out.println("Client dataInputStream method says: "+e);
+            System.out.println("ERROR: Client dataInputStream method says: "+e);
         }
     }
     
@@ -44,9 +47,10 @@ public class Client {
     public void dataOutputStream(){
         try{
             output = new PrintStream(MyClient.getOutputStream());
+            System.out.println("Client dataOutputStream method says: output = "+output);
         }
         catch(Exception e){
-            System.out.println("Client dataOutputStream method says: "+e);
+            System.out.println("ERROR: Client dataOutputStream method says: "+e);
         }
     }
     
@@ -56,9 +60,10 @@ public class Client {
             output.close();
             input.close();
             MyClient.close();
+            System.out.println("Client closeSockets method says: All sockets closed successfully!");
         }
         catch(IOException e){
-            System.out.println("Client closeSockets method says: "+e);
+            System.out.println("ERROR: Client closeSockets method says: "+e);
         }
     }    
     
