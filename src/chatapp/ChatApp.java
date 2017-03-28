@@ -1,7 +1,9 @@
 
 package chatapp;
 
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
@@ -22,7 +24,7 @@ public class ChatApp {
     static int serverPortNumber = 8006; //assuming server is localhost:8080
     
     //app is run from command line with arguments: <machineName> and <portNumber> Eg. java ChatApp client 1234
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         sc = new Scanner(System.in);
         chatServer = new Server();
         chatClient = new Client();
@@ -57,15 +59,24 @@ public class ChatApp {
     }
     
     //method to make program run via command line until exit command is supplied...
-    public static void run(){
-        chatServer.dataInputStream();
-        chatServer.dataOutputStream();
-        chatClient.dataInputStream();
-        chatClient.dataOutputStream();
+    public static void run() throws IOException{
+        //initializing server and client sockets input and output streams respectively...
+        DataInputStream serverInputStream = chatServer.dataInputStream(); //messages sent to the server (from client)
+        PrintStream serverOutputStream = chatServer.dataOutputStream(); //messages sent from the server (to client)
+        DataInputStream clientInputStream = chatClient.dataInputStream(); //messages sent to client (from server)
+        PrintStream clientOutputStream = chatClient.dataOutputStream(); //messages sent from client (to server)
+        //
+        Scanner serverMsg = new Scanner(serverInputStream); 
+        Scanner clientMsg = new Scanner(clientInputStream);
         
-        String command = sc.nextLine(); //app prompts user to enter a command
+        System.out.println("");
+        String command = sc.nextLine(); //app prompts client to enter a command
         while (!command.equals(":exit")){
-            System.out.println(command);
+            clientOutputStream.println("Client: "+chatClient.machineName+" sent a message at "+System.currentTimeMillis());
+            serverOutputStream.println("Server says client said: "+command);
+            
+            System.out.println(serverMsg.nextLine()); //prints to console messages sent to server from client
+            System.out.println(clientMsg.nextLine()); //prints to console message sent from server to client
             
             command = sc.nextLine(); //app prompts user to enter a command
         }

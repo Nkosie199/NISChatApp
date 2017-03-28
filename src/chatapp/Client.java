@@ -33,7 +33,7 @@ public class Client {
     }
     
     //client processing responses from the server...
-    public void dataInputStream(){
+    public DataInputStream dataInputStream(){
         try{
             input = new DataInputStream(MyClient.getInputStream());
             System.out.println("Client dataInputStream method says: input = "+input);
@@ -41,10 +41,11 @@ public class Client {
         catch(Exception e){
             System.out.println("ERROR: Client dataInputStream method says: "+e);
         }
+        return input;
     }
     
     //client output stream to send data to the server
-    public void dataOutputStream(){
+    public PrintStream dataOutputStream(){
         try{
             output = new PrintStream(MyClient.getOutputStream());
             System.out.println("Client dataOutputStream method says: output = "+output);
@@ -52,6 +53,7 @@ public class Client {
         catch(Exception e){
             System.out.println("ERROR: Client dataOutputStream method says: "+e);
         }
+        return output;
     }
     
     //closing server sockets
