@@ -4,9 +4,13 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Scanner;
 
 /**
@@ -26,6 +30,8 @@ public class Server {
         //sc = new Scanner(System.in);
         //portNumber = sc.nextInt();
         portNumber = 4444;
+        
+        System.out.println(getServerIP());
         
         //setting up...
         setup();
@@ -127,6 +133,32 @@ public class Server {
         catch(IOException e){
             System.out.println("ERROR: Server closeSockets method says: "+e);
         }
+    }
+
+    public static String getServerIP(){
+        String ip = "";
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                // filters out 127.0.0.1 and inactive interfaces
+                if (iface.isLoopback() || !iface.isUp())
+                    continue;
+
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while(addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    ip = addr.getHostAddress();
+                    //String fullCredentials = iface.getDisplayName() + " " + ip;
+                    System.out.println(ip);
+                }
+            }
+        } 
+        catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+        
+        return ip;
     }
     
     public static void exit(){
