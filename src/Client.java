@@ -26,13 +26,13 @@ public class Client {
     static Scanner sc;
     
     public static void main(String[] args) throws IOException{
-        //System.out.println("Please enter your machine name: ");
+        System.out.println("Please enter server domain name/ IP address: ");
         //System.out.println(getClientIP());
         sc = new Scanner(System.in);
-        //machineName = sc.nextLine();
-        machineName = "localhost";
+        machineName = sc.nextLine();
+        //machineName = "localhost";
         
-        System.out.println("Please enter you user name: ");
+        System.out.println("Please enter your user name: ");
         userName = sc.nextLine();
         
         //System.out.println("Please specify the client port number you wish to use: ");
@@ -47,9 +47,8 @@ public class Client {
         System.out.println("");
         run();
         //upon exiting...
-        closeSockets();
-        //
         exit();
+        closeSockets();
         //FIN!
         System.out.println("Test Complete!");
     }
@@ -75,8 +74,7 @@ public class Client {
         //
         Scanner clientMsgIn = new Scanner(clientInputStream); //used to store incoming messages from server
         ArrayList<String> log = new ArrayList();
-        
-        System.out.println("");
+
         String command = userName+" has entered the conversation"; //app prompts client to enter a command
         clientOutputStream.println(command); //send entry message to server
         System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client

@@ -85,7 +85,6 @@ public class Server {
                 //OR ...
                 //out.writeObject(log); //sent the client the whole log
             }catch(Exception e){
-                System.out.println("");
                 System.out.println("Server run method exception says: "+e);
                 break;
             }
