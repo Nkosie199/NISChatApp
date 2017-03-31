@@ -18,6 +18,7 @@ public class Client {
     static Socket MyClient; //stream socket (TCP)
     //String machineName = args[0];
     static String machineName; //specifies machine name in IP address form
+    static String userName; //specifies client chosen user-name
     //int portNumber = Integer.parseInt(args[1]);
     static int portNumber; //server open port used to send requests to server < 1023 < 65536
     static DataInputStream input; //stores server responses
@@ -25,14 +26,19 @@ public class Client {
     static Scanner sc;
     
     public static void main(String[] args) throws IOException{
-        System.out.println("Please enter your machine name: ");
-        System.out.println(getClientIP());
-        
+        //System.out.println("Please enter your machine name: ");
+        //System.out.println(getClientIP());
         sc = new Scanner(System.in);
-        machineName = sc.nextLine();
+        //machineName = sc.nextLine();
+        machineName = "localhost";
         
-        System.out.println("Please specify the client port number you wish to use: ");
-        portNumber = sc.nextInt();
+        System.out.println("Please enter you user name: ");
+        userName = sc.nextLine();
+        
+        //System.out.println("Please specify the client port number you wish to use: ");
+        //portNumber = sc.nextInt();
+        portNumber = 4444;
+        
         //initializing...
         chatServer = new Server();
         setup();
@@ -68,20 +74,26 @@ public class Client {
         PrintStream clientOutputStream = dataOutputStream(); //messages sent from client (to server)
         //
         Scanner clientMsgIn = new Scanner(clientInputStream); //used to store incoming messages from server
+        ArrayList<String> log = new ArrayList();
         
         System.out.println("");
-        String command = machineName+" has entered the conversation"; //app prompts client to enter a command
+        String command = userName+" has entered the conversation"; //app prompts client to enter a command
         clientOutputStream.println(command); //send entry message to server
         System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
-        sc.nextLine(); //to get rid of the blank 1st message
+        //sc.nextLine(); //to get rid of the blank 1st message
         while (!command.equals(":exit")){
             // now we will continuously send messages to the server and print out the servers response...
             command = sc.nextLine(); //app prompts user to enter a command
-            clientOutputStream.println("("+System.currentTimeMillis()+") "+machineName+": "+command);
-            System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
+            clientOutputStream.println("("+System.currentTimeMillis()+") "+userName+": "+command);
+            
+            //log = clientMsgIn.nextLine(); //have to covert this to an ArrayList to manipulate its elements
+            
+            //while (clientMsgIn.hasNextLine()){
+                System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
+            //}
             
         }
-        command = machineName+" has left the conversation"; //app prompts client to enter a command
+        command = userName+" has left the conversation"; //app prompts client to enter a command
         clientOutputStream.println(command); //send entry message to server
         System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
         System.out.println("");
@@ -139,7 +151,7 @@ public class Client {
                     InetAddress addr = addresses.nextElement();
                     ip = addr.getHostAddress();
                     //String fullCredentials = iface.getDisplayName() + " " + ip;
-                    System.out.println(iface.getDisplayName() + " " + ip);
+                    System.out.println(ip);
                 }
             }
         } 

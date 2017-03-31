@@ -22,15 +22,17 @@ public class Server {
     static ArrayList<String> log;
     
     public static void main(String[] args){
-        System.out.println("Please enter your server port number: ");
-        sc = new Scanner(System.in);
-        portNumber = sc.nextInt();
-        //
+        //System.out.println("Please enter your server port number: ");
+        //sc = new Scanner(System.in);
+        //portNumber = sc.nextInt();
+        portNumber = 4444;
+        
+        //setting up...
         setup();
         setupClientSocket();
-        //
+        //running...
         run();
-        //
+        //exiting...
         closeSockets();
         exit();
     }
@@ -72,16 +74,22 @@ public class Server {
         //ObjectOutputStream out = new ObjectOutputStream(serviceSocket.getOutputStream()); 
         
         while (!log.isEmpty()){ //while the log is not empty
-            nextMsg = serverMsgIn.nextLine(); //is the next message incoming from client
-            System.out.println(nextMsg); //print to console incoming messages from client
-            log.add(nextMsg); //add the clients message to the log
-                         
-            serverOutputStream.println(log); //send the client the whole log
-            //OR ...
-            //out.writeObject(log); //sent the client the whole log
-            
-        }
-        
+            try{  
+                nextMsg = serverMsgIn.nextLine(); //is the next message incoming from client
+                System.out.println(nextMsg); //print to console incoming messages from client
+                log.add(nextMsg); //add the clients message to the log
+
+                //for (int i=0; i<log.size(); i++){
+                    serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
+                //}         
+                //OR ...
+                //out.writeObject(log); //sent the client the whole log
+            }catch(Exception e){
+                System.out.println("");
+                System.out.println("Server run method exception says: "+e);
+                break;
+            }
+        }   
     }
     
     //server processing requests from the client...
@@ -123,7 +131,7 @@ public class Server {
     }
     
     public static void exit(){
-        System.out.println("Server closed...");
+        System.out.println("Server closed.");
     }
     
 }
