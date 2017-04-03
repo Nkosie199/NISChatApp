@@ -73,7 +73,7 @@ public class Client {
         PrintStream clientOutputStream = dataOutputStream(); //messages sent from client (to server)
         //
         Scanner clientMsgIn = new Scanner(clientInputStream); //used to store incoming messages from server
-        ArrayList<String> log = new ArrayList();
+        //ArrayList<String> log = new ArrayList();
 
         String command = userName+" has entered the conversation"; //app prompts client to enter a command
         clientOutputStream.println(command); //send entry message to server
@@ -87,7 +87,8 @@ public class Client {
             //log = clientMsgIn.nextLine(); //have to covert this to an ArrayList to manipulate its elements
             
             //while (clientMsgIn.hasNextLine()){
-                System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
+                //System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
+                formatLogEntry(clientMsgIn.nextLine());
             //}
             
         }
@@ -95,6 +96,16 @@ public class Client {
         clientOutputStream.println(command); //send entry message to server
         System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
         System.out.println("");
+    }
+    
+    //adequately prints/ displays to returned server log to console 
+    public static void formatLogEntry(String inMsg){
+        String out = inMsg.substring(1, inMsg.length()-1); //remove brackets
+        //System.out.println("out = "+out);
+        String[] out2 = out.split(", ");
+        for (String s: out2){
+            System.out.println(s);
+        }     
     }
     
     //client processing responses from the server...

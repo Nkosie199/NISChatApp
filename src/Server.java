@@ -110,7 +110,7 @@ public class Server implements Runnable {
         Scanner serverMsgIn = new Scanner(serverInputStream); //used to store incoming messages from client
         
         log = new ArrayList();
-        log.add("Server started"); //add first message to server log
+        log.add("Chat started"); //add first message to server log
         String nextMsg; //buffer to store incoming messages from client
         //ObjectOutputStream out = new ObjectOutputStream(serviceSocket.getOutputStream()); 
         
@@ -123,7 +123,8 @@ public class Server implements Runnable {
                     log.add(nextMsg); //add the clients message to the log
 
                     //for (int i=0; i<log.size(); i++){
-                        serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
+                        //serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
+                        serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
                     //}         
                     //OR ...
                     //out.writeObject(log); //sent the client the whole log
