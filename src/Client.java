@@ -40,7 +40,7 @@ public class Client {
         portNumber = 4444;
         
         //initializing...
-        chatServer = new Server();
+        //chatServer = new Server();
         setup();
         
         System.out.println("******* Welcome to Chat APP! *******");

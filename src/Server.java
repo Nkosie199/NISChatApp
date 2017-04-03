@@ -16,7 +16,10 @@ import java.util.Scanner;
 /**
  * @author gmdnko003
  */
-public class Server {
+public class Server implements Runnable {
+    private Thread t;
+    private static String threadName;
+    
     static ServerSocket MyService; //stream socket to listen in for clients requests (TCP)
     static Socket serviceSocket = null; //socket sent from client to server
     static int portNumber; // server will use this port number for listening
@@ -24,27 +27,58 @@ public class Server {
     static PrintStream output; //used to send messages back to client
     static Scanner sc;
     static ArrayList<String> log;
+    static boolean quit = false;
+    static boolean threadSwitch = true;
     
-    public static void main(String[] args){
+   Server( String name) {
+      threadName = name;
+      System.out.println("Creating " +  threadName );
+   }
+   
+   public void run() {
+        System.out.println("Running " +  threadName );
+        System.out.println(threadName);
+        
+        int i=0;
+            while (quit==false){           
+                if (i == 0){
+                    i++;
+                    portNumber = 4444;
+                    System.out.println(getServerIP());
+                    
+                    setup();
+                    setupClientSocket(); 
+
+                } 
+                else if (i == 1){
+                    
+                    //running...
+                    run2();
+                    i=0;
+                }
+            }
+            
+            
+            //exiting...
+            closeSockets();
+            exit();
+        
+   }
+   
+   public void start () {
+      System.out.println("Starting " +  threadName );
+      if (t == null) {
+         t = new Thread (this, threadName);
+         t.start ();
+      }
+   }
+    
+    //initialization...
+    public static void setup(){
         //System.out.println("Please enter your server port number: ");
         //sc = new Scanner(System.in);
         //portNumber = sc.nextInt();
         portNumber = 4444;
-        
-        System.out.println(getServerIP());
-        
-        //setting up...
-        setup();
-        setupClientSocket();
-        //running...
-        run();
-        //exiting...
-        closeSockets();
-        exit();
-    }
-    
-    //initialization...
-    public static void setup(){
         
         try{
             MyService = new ServerSocket(portNumber);
@@ -52,6 +86,7 @@ public class Server {
         }
         catch(IOException e){
                 System.out.println("ERROR: Server setup method says: "+e);
+                 
         }
         
     }
@@ -63,12 +98,12 @@ public class Server {
             System.out.println("Server-client socket setup complete!");
         }
         catch(IOException e){
-            System.out.println("ERROR: Server setup method says: "+e) ;
+            System.out.println("ERROR: Server-client setup method says: "+e) ;
         }
     }
     
     //method to make program run via command line until exit command is supplied...
-    public static void run(){
+    public static void run2(){
         DataInputStream serverInputStream = dataInputStream(); //messages sent to the server (from client)
         PrintStream serverOutputStream = dataOutputStream(); //messages sent from the server (to client)
         //
@@ -80,20 +115,25 @@ public class Server {
         //ObjectOutputStream out = new ObjectOutputStream(serviceSocket.getOutputStream()); 
         
         while (!log.isEmpty()){ //while the log is not empty
-            try{  
-                nextMsg = serverMsgIn.nextLine(); //is the next message incoming from client
-                System.out.println(nextMsg); //print to console incoming messages from client
-                log.add(nextMsg); //add the clients message to the log
+            //perhaps don't qualify
+            //if (threadName.equals("Thread-1")){
+                try{  
+                    nextMsg = serverMsgIn.nextLine(); //is the next message incoming from client
+                    System.out.println(nextMsg); //print to console incoming messages from client
+                    log.add(nextMsg); //add the clients message to the log
 
-                //for (int i=0; i<log.size(); i++){
-                    serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
-                //}         
-                //OR ...
-                //out.writeObject(log); //sent the client the whole log
-            }catch(Exception e){
-                System.out.println("Server run method exception says: "+e);
-                break;
-            }
+                    //for (int i=0; i<log.size(); i++){
+                        serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
+                    //}         
+                    //OR ...
+                    //out.writeObject(log); //sent the client the whole log
+                }catch(Exception e){
+                    
+                    System.out.println("Server run method exception says: "+e);
+                    break;
+                }
+            //}
+
         }   
     }
     
@@ -161,7 +201,17 @@ public class Server {
         return ip;
     }
     
+    public boolean isDead(){
+        if (t.isAlive()){
+            return false;
+        }
+        else{
+            return true;
+        }
+    }
+    
     public static void exit(){
+        quit = true;
         System.out.println("Server closed.");
     }
     
