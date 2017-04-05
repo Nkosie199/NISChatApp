@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 /**
  *
@@ -13,7 +8,7 @@ public class MainUI {
     static long time1 = System.currentTimeMillis(); //start time
     static long time2 = System.currentTimeMillis(); //current time
     static long timeout =time2-time1;
-    static int limit = 1*60000; // 35 (minutes) x 60000 (a minute in milliseconds)  
+    static int limit = 30*60000; // 35 (minutes) x 60000 (a minute in milliseconds)  
     
     public static void main(String args[]) {
         
@@ -22,10 +17,10 @@ public class MainUI {
         Server R2 = new Server( "Thread-2");
         R2.start(); 
         Server R3 = new Server( "Thread-3");
-        R1.start();
+        R3.start();
         Server R4 = new Server( "Thread-4");
-        
-        R2.start(); 
+        R4.start();
+ 
         System.out.println("Timeout: "+ timeout);
         System.out.println("Limit: "+limit);
         while (timeout < limit){
@@ -36,6 +31,7 @@ public class MainUI {
                 //
                 threadCreator();
             }
+            
             if (R2.isDead()){ //if the thread dies create a new 1
                 System.out.println("Thead-2 just DIED! CREATING A NEW ONE...");
                 R2 = new Server( "Thread-2");
@@ -68,8 +64,7 @@ public class MainUI {
     public static synchronized void threadCreator(){         
         time1 = System.currentTimeMillis();
         timeout =time2-time1;
-        System.out.println("Timeout: "+timeout);
-        
+        System.out.println("Timeout changed to: "+timeout);     
     }
     
     public static void quit(){
