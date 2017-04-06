@@ -16,13 +16,13 @@ public class MainUI {
         R1.start();
         Server R2 = new Server( "Thread-2");
         R2.start(); 
-        Server R3 = new Server( "Thread-3");
-        R3.start();
-        Server R4 = new Server( "Thread-4");
-        R4.start();
+//        Server R3 = new Server( "Thread-3");
+//        R3.start();
+//        Server R4 = new Server( "Thread-4");
+//        R4.start();
  
-        System.out.println("Timeout: "+ timeout);
-        System.out.println("Limit: "+limit);
+//        System.out.println("Timeout: "+ timeout);
+//        System.out.println("Limit: "+limit);
         while (timeout < limit){
             if (R1.isDead()){ //if the thread dies create a new 1
                 System.out.println("Thead-1 just DIED! CREATING A NEW ONE...");
@@ -39,20 +39,20 @@ public class MainUI {
                 //
                 threadCreator();
             }
-            if (R3.isDead()){ //if the thread dies create a new 1
-                System.out.println("Thead-3 just DIED! CREATING A NEW ONE...");
-                R3 = new Server( "Thread-3");
-                R3.start();   
-                //
-                threadCreator();
-            }
-            if (R4.isDead()){ //if the thread dies create a new 1
-                System.out.println("Thead-4 just DIED! CREATING A NEW ONE...");
-                R4 = new Server( "Thread-4");
-                R4.start();     
-                //
-                threadCreator();
-            }
+//            if (R3.isDead()){ //if the thread dies create a new 1
+//                System.out.println("Thead-3 just DIED! CREATING A NEW ONE...");
+//                R3 = new Server( "Thread-3");
+//                R3.start();   
+//                //
+//                threadCreator();
+//            }
+//            if (R4.isDead()){ //if the thread dies create a new 1
+//                System.out.println("Thead-4 just DIED! CREATING A NEW ONE...");
+//                R4 = new Server( "Thread-4");
+//                R4.start();     
+//                //
+//                threadCreator();
+//            }
             time2 = System.currentTimeMillis();
             timeout = time2-time1;
             //System.out.println(timeout);

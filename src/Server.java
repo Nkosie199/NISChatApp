@@ -29,7 +29,7 @@ public class Server implements Runnable {
     private static String threadName;
     static ServerSocket MyService; //stream socket to listen in for clients requests (TCP)
     static Socket serviceSocket = null; //socket sent from client to server
-    static int portNumber; // server will use this port number for listening
+    static int portNumber, portNumber2; // server will use this port number for listening
     static DataInputStream input; //used to store client messages for prosessing
     static PrintStream output; //used to send messages back to client
     static Scanner sc;
@@ -40,7 +40,7 @@ public class Server implements Runnable {
 
     Server(String name) {
         threadName = name;
-        System.out.println("Creating " + threadName);
+        //System.out.println("Creating " + threadName);
     }
 
     public void run() {
@@ -51,6 +51,7 @@ public class Server implements Runnable {
             if (i == 0) {
                 i++;
                 portNumber = 4444;
+                portNumber2 = 8888;
                 System.out.println(getServerIP());
                 setup();
                 setupClientSocket();
@@ -65,7 +66,7 @@ public class Server implements Runnable {
     }
 
     public void start() {
-        System.out.println("Starting " + threadName);
+        //System.out.println("Starting " + threadName);
         if (t == null) {
             t = new Thread(this, threadName);
             t.start();
@@ -74,7 +75,6 @@ public class Server implements Runnable {
 
     //initialization...
     public static void setup() {
-        portNumber = 4444;
         try {
             MyService = new ServerSocket(portNumber);
             System.out.println("Server socket setup complete!");
@@ -98,28 +98,21 @@ public class Server implements Runnable {
     public static void run2() {
         DataInputStream serverInputStream = dataInputStream(); //messages sent to the server (from client)
         PrintStream serverOutputStream = dataOutputStream(); //messages sent from the server (to client)
-        //
-        Scanner serverMsgIn = new Scanner(serverInputStream, "UTF-8"); //used to store incoming messages from client       
+        Scanner serverMsgIn = new Scanner(serverInputStream, "UTF-8"); //used to store incoming messages from client 
         log = new ArrayList();
         log.add("Chat started"); //add first message to server log
         String nextMsg; //buffer to store incoming messages from client
-        //ObjectOutputStream out = new ObjectOutputStream(serviceSocket.getOutputStream()); 
         int fileSendSwitch = 0;
         int fileReceiveSwitch = 0;
         //int extension = 1;
-
         while (!log.isEmpty()) { //while the log is not empty
             //perhaps don't qualify threads    
             try {
-                System.out.println("Waiting for client command...");
                 if (!serverMsgIn.hasNextLine()) { //if scanner does not have next line                   
-                    System.out.println("Scanner does not have next line ISSUE!");
-                    setupClientSocket();
+                    //setupClientSocket();
                 }
                 else { //Scanner has next line  
-                    System.out.println(serviceSocket.getInputStream());
-                    System.out.println(serviceSocket.getOutputStream());
-                    //
+                    //System.out.println("Waiting for client command...");
                     nextMsg = serverMsgIn.nextLine(); //is the next message incoming from client
                     if (nextMsg.contains(":sendfile") && fileReceiveSwitch == 0) { //in the case that a client sends an image                     
                         System.out.println("Client is attempting to send file...");
@@ -127,23 +120,18 @@ public class Server implements Runnable {
                         //serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
                         serverOutputStream.println(log); //sends client last message in the log, ideally the whole log: OUTPUT
                         //
-                        System.out.println("Waiting for client to send file name...");
+                        System.out.println("Waiting for file name:");
                         String fileName = serverMsgIn.nextLine(); //INPUT
-                        log.add("Client has sent a file named: "+fileName);
-                        serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
-                        //
                         System.out.println("File name: "+fileName);
                         serverFileRecieve(fileName); //key method that implements, recieves file: INPUT
-                        System.out.println("RECEIVED!");
-                        //
                         System.out.println("File has been recieved!!!");
-                        //
-                        System.out.println(serviceSocket.getInputStream());
-                        System.out.println(serviceSocket.getOutputStream());
-                        //
-                        //log.add("File "+fileName+" has successfully been recieved!!");
-                        //serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
                         //progression...
+                        while (serverMsgIn.hasNext()){
+                            System.out.println(serverMsgIn.nextLine()); //CLEARING REMNANTS OF THE IMAGE
+                        }
+                        log.add("File "+fileName+" has successfully been recieved!!");
+                        serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
+                        //
                         fileReceiveSwitch = 1;  
                     } 
                     else if (nextMsg.contains(":getfile") && fileSendSwitch == 0) { //in the case that a client sends an image                     
@@ -155,15 +143,13 @@ public class Server implements Runnable {
                         System.out.println("Waiting for client to send file name...");
                         //
                         String fileName = serverMsgIn.nextLine(); //takes in name of file 
+                        System.out.println("File name: "+fileName);
                         log.add("File name :"+fileName);
                         serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
                         //
                         serverFileSend(fileName); //key implementing method, sends file to client
                         System.out.println("File has been sent!!!");
                         //Output stream might have been closed
-                        System.out.println(serviceSocket.getInputStream());
-                        System.out.println(serviceSocket.getOutputStream());
-                        //serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
                         //progression...
                         fileSendSwitch = 1;
                     }
@@ -178,68 +164,76 @@ public class Server implements Runnable {
                 }
             } catch (Exception e) {
                 System.out.println("Server run method exception says: " + e);
-                break;
             }
         }
     }
 
-    public static void serverFileRecieve(String fileToRecieve) throws FileNotFoundException, IOException {
+    public static void serverFileRecieve(String fileToReceive) throws FileNotFoundException, IOException {
         int bytesRead;
         int current = 0;
         FileOutputStream fos = null;
         BufferedOutputStream bos = null;
-        //Socket sock = null;
-        InputStream is = null;
+        ServerSocket servsock = null;
+        Socket sock = null;
         try {
+            servsock = new ServerSocket(portNumber2);
+            System.out.println("Connecting...");
             // receive file
-            byte[] mybytearray = new byte[FILE_SIZE];
-            is = dataInputStream();
-            fos = new FileOutputStream(fileToRecieve);
+            byte [] mybytearray  = new byte [FILE_SIZE];
+            InputStream is = input;
+            fos = new FileOutputStream(fileToReceive);
             bos = new BufferedOutputStream(fos);
-            bytesRead = is.read(mybytearray, 0, mybytearray.length);
+            bytesRead = is.read(mybytearray,0,mybytearray.length);
             current = bytesRead;
             do {
-                bytesRead = is.read(mybytearray, current, (mybytearray.length - current));
-                if (bytesRead >= 0) {
-                    current += bytesRead;
-                }
-            } while (bytesRead > -1);
-            bos.write(mybytearray, 0, current);
+               bytesRead =
+                  is.read(mybytearray, current, (mybytearray.length-current));
+               if(bytesRead >= 0) current += bytesRead;
+            } while(bytesRead > -1);
+            bos.write(mybytearray, 0 , current);
             bos.flush();
-            fos.flush();
-            System.out.println("File " + fileToRecieve + " downloaded (" + current + " bytes read)");
-        } finally {
-            if (fos != null) {
-                fos.close();
-            }
-            if (bos != null) {
-                bos.close();
-            }
+            is.close();
+            System.out.println("File " + fileToReceive + " downloaded (" + current + " bytes read)");
         }
+        finally {
+            if (fos != null) fos.close();
+            if (bos != null) bos.close();
+            if (servsock != null) servsock.close();
+        } 
     }
     
     public static void serverFileSend(String fileToSend) throws FileNotFoundException, IOException{
-        FileInputStream fis = null;
-        BufferedInputStream bis = null;
-        OutputStream os = null;   
-        try {
-            // send file
-            File myFile = new File (fileToSend); //creates new instance of file
-            byte [] mybytearray  = new byte [(int)myFile.length()];
-            fis = new FileInputStream(myFile);
-            bis = new BufferedInputStream(fis);
-            bis.read(mybytearray,0,mybytearray.length);
-            os = output;
-            System.out.println("Sending " + fileToSend + "(" + mybytearray.length + " bytes)");
-            os.write(mybytearray,0,mybytearray.length);
-            os.flush();
-            System.out.println("Done."); 
+            FileInputStream fis = null;
+            BufferedInputStream bis = null;
+            OutputStream os = null;
+            ServerSocket servsock = null;
+            Socket sock = null;
+            try {
+                servsock = new ServerSocket(portNumber2);       
+                System.out.println("Waiting...");
+                try {
+                    sock = servsock.accept();
+                    System.out.println("Accepted connection : " + sock);
+                    // send file
+                    File myFile = new File (fileToSend);
+                    byte [] mybytearray  = new byte [(int)myFile.length()];
+                    fis = new FileInputStream(myFile);
+                    bis = new BufferedInputStream(fis);
+                    bis.read(mybytearray,0,mybytearray.length);
+                    os = sock.getOutputStream();
+                    System.out.println("Sending " + fileToSend + "(" + mybytearray.length + " bytes)");
+                    os.write(mybytearray,0,mybytearray.length);
+                    os.flush();
+                    System.out.println("Done.");
+                }
+                finally {
+                    if (bis != null) bis.close();
+                    if (os != null) os.close();
+                    if (sock!=null) sock.close();
+                }        
         }
         finally {
-            if (bis != null) bis.close();
-            if (os != null) os.close();
-            if (fis != null) fis.close();
-            //if (serviceSocket!=null) serviceSocket.close();
+            if (servsock != null) servsock.close();
         }
     }
 

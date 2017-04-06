@@ -8,8 +8,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;import java.io.InputStream;
-;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.InetAddress;
@@ -18,17 +18,16 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author gmdnko003
  */
 public class Client {
     static Socket MyClient; //stream socket (TCP)
-    //String machineName = args[0];
     static String machineName; //specifies machine name in IP address form
     static String userName; //specifies client chosen user-name
-    //int portNumber = Integer.parseInt(args[1]);
-    static int portNumber; //server open port used to send requests to server < 1023 < 65536
+    static int portNumber, portNumber2; //server open port used to send requests to server < 1023 < 65536
     static DataInputStream input; //stores server responses
     static PrintStream output; //stores message to be sent to server
     static Scanner sc;
@@ -42,7 +41,8 @@ public class Client {
         //machineName = "localhost";       
         System.out.println("Please enter your user name: ");
         userName = sc.nextLine();      
-        portNumber = 4444;        
+        portNumber = 4444;  
+        portNumber2 = 8888;
         //initializing...
         setup();       
         System.out.println("******* Welcome to Chat APP! *******");
@@ -71,7 +71,6 @@ public class Client {
         //initializing server and client sockets input and output streams respectively...   
         DataInputStream clientInputStream = dataInputStream(); //messages sent to client (from server)
         PrintStream clientOutputStream = dataOutputStream(); //messages sent from client (to server)
-        //
         String fileDir;
         Scanner clientMsgIn = new Scanner(clientInputStream); //used to store incoming messages from server
         //ArrayList<String> log = new ArrayList();
@@ -88,22 +87,13 @@ public class Client {
                 try{                  
                     fileDir = sc.nextLine(); //app prompts user to enter a image name (redundant at this point)
                     clientOutputStream.println(fileDir); //sends server file name/ directory :OUTPUT
-                    //System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
-                    formatLogEntry(clientMsgIn.nextLine()); //INPUT
                     //
                     System.out.println("Sending file: "+fileDir+"...");
                     clientFileSend(fileDir); //sends file to server
-                    System.out.println("SENT!");
-                    //
-                    clientOutputStream.println("("+System.currentTimeMillis()+") "+userName+": "+"Client has just shared a file: "+ fileDir +". Type :getfile to receive..."); 
-                    //System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
-                    formatLogEntry(clientMsgIn.nextLine()); //input             
-                    //
+                    //           
                 }
                 catch(Exception e){
-                    //System.out.println("ERROR: Failed to read or write file");
                     System.out.println("Client run method said "+e);
-                    clientOutputStream.println("Client has failed to send file");
                 }  
             }
             else if (command.equals(":getfile")){
@@ -114,19 +104,13 @@ public class Client {
                 System.out.println("Receiving file: "+fileDir+"...");  
                 //
                 clientOutputStream.println(fileDir); //send the server the name of the file you wish to receive
-                if (clientMsgIn.hasNextLine()){
-                    //System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
-                    formatLogEntry(clientMsgIn.nextLine()); //input
-                }  
+                formatLogEntry(clientMsgIn.nextLine()); //input
                 try{
                     clientFileReceive(fileDir);
-                    //
                     System.out.println("Client has recieved file: "+fileDir+"!!! ");
                 }
                 catch(Exception e){
-                    //System.out.println("ERROR: Failed to read or write file");
-                    System.out.println("Client run method said "+e);
-                    clientOutputStream.println("Client has failed to get file");
+                    System.out.println("Client get file method said "+e);
                 }  
             }
             else{
@@ -134,10 +118,10 @@ public class Client {
                 System.out.print(">>>");
                 command = sc.nextLine(); //app prompts user to enter a command
                 clientOutputStream.println("("+System.currentTimeMillis()+") "+userName+": "+command); //output
-                if (clientMsgIn.hasNextLine()){
+                //while (clientMsgIn.hasNextLine()){
                     //System.out.println(clientMsgIn.nextLine()); //prints to console message sent from server to client
                     formatLogEntry(clientMsgIn.nextLine()); //input
-                }         
+                //}         
             }
             //ensure input/output streams are kept constant
         }
@@ -150,77 +134,69 @@ public class Client {
         System.out.println("");
     }
     
-    public static synchronized void clientFileSend(String fileToSend) throws FileNotFoundException, IOException{
+    public static synchronized void clientFileSend(String fileToSend) throws FileNotFoundException, IOException, InterruptedException{
         FileInputStream fis = null;
         BufferedInputStream bis = null;
-        OutputStream os = null;   
+        OutputStream os = null;
+        Socket sock = null;
+              
+        System.out.println("Waiting for server to create connection...");
         try {
+            TimeUnit.SECONDS.sleep(5);
+            sock = new Socket(machineName, portNumber2);
+            System.out.println("Accepted connection : " + sock);
             // send file
-            File myFile = new File (fileToSend); //creates new instance of file
+            File myFile = new File (fileToSend);
             byte [] mybytearray  = new byte [(int)myFile.length()];
             fis = new FileInputStream(myFile);
             bis = new BufferedInputStream(fis);
             bis.read(mybytearray,0,mybytearray.length);
-            os = output;
+            os = sock.getOutputStream();
             System.out.println("Sending " + fileToSend + "(" + mybytearray.length + " bytes)");
             os.write(mybytearray,0,mybytearray.length);
-//            os.flush();
-            System.out.println("Done."); 
+            os.flush();
+            System.out.println("Done.");
         }
         finally {
-//            if (bis != null) bis.close();
-//            if (os != null) os.close();
-//            if (fis != null) fis.close();            
-            if (MyClient!=null){
-//                System.out.println("WARNING: Closing client socket!");
-//                MyClient.close();
-                System.out.println("WARNING: Client socket is not null! Might have to reset connection");
-                System.out.println("Socket connected? "+MyClient.isConnected()); //
-                //setup(); //reset socket connection
-                //MyClient=null;
-                    System.out.println(MyClient.getInputStream());
-                    System.out.println(MyClient.getOutputStream());
-//                    clientOutputStream = dataOutputStream();
-//                    clientMsgIn = new Scanner(clientInputStream); 
-            }
-        }
+            if (bis != null) bis.close();
+            if (os != null) os.close();
+            if (sock!=null) sock.close();
+        }        
     }
     
-    public static synchronized void clientFileReceive(String fileToRecieve) throws FileNotFoundException, IOException {
+    public static synchronized void clientFileReceive(String fileToReceive) throws FileNotFoundException, IOException, InterruptedException {
         int bytesRead;
         int current = 0;
         FileOutputStream fos = null;
         BufferedOutputStream bos = null;
-        //Socket sock = null;
-        InputStream is = null;
-        try {
+        Socket sock = null;
+        System.out.println("Waiting for server to create connection...");
+        try {     
+            TimeUnit.SECONDS.sleep(5);
+            sock = new Socket(machineName, portNumber2);
+            System.out.println("Connecting...");
             // receive file
-            byte[] mybytearray = new byte[FILE_SIZE];
-            is = input;
-            fos = new FileOutputStream(fileToRecieve);
+            byte [] mybytearray  = new byte [FILE_SIZE];
+            InputStream is = sock.getInputStream();
+            fos = new FileOutputStream(fileToReceive);
             bos = new BufferedOutputStream(fos);
-            bytesRead = is.read(mybytearray, 0, mybytearray.length);
+            bytesRead = is.read(mybytearray,0,mybytearray.length);
             current = bytesRead;
             do {
-                bytesRead = is.read(mybytearray, current, (mybytearray.length - current));
-                if (bytesRead >= 0) {
-                    current += bytesRead;
-                }
-            } while (bytesRead > -1);
-            bos.write(mybytearray, 0, current);
+               bytesRead =
+                  is.read(mybytearray, current, (mybytearray.length-current));
+               if(bytesRead >= 0) current += bytesRead;
+            } while(bytesRead > -1);
+
+            bos.write(mybytearray, 0 , current);
             bos.flush();
-            fos.flush();
-            System.out.println("File " + fileToRecieve + " downloaded (" + current + " bytes read)");
-        } finally {
-            if (fos != null) {
-                fos.close();
-            }
-            if (bos != null) {
-                bos.close();
-            }
-            if (MyClient != null) {
-                MyClient.close();
-            }
+            System.out.println("File " + fileToReceive
+                + " downloaded (" + current + " bytes read)");
+        }
+        finally {
+            if (fos != null) fos.close();
+            if (bos != null) bos.close();
+            if (sock != null) sock.close();
         }
     }
     
