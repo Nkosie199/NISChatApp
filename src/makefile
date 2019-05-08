@@ -6,9 +6,7 @@ JC = javac
 java.class:
 	$(JC) $(JFLAGS) *.java
 
-CLASSES = ChatApp.java \
-	MainUI.java \
-	Server.java \
+CLASSES = Server.java \
 	Client.java
 
 default: classes

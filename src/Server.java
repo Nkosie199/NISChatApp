@@ -1,278 +1,92 @@
-
-
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileNotFoundException;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Scanner;
 
-/**
- * @author gmdnko003
- */
-public class Server implements Runnable {
-
-    private Thread t;
-    private static String threadName;
-    static ServerSocket MyService; //stream socket to listen in for clients requests (TCP)
-    static Socket serviceSocket = null; //socket sent from client to server
-    static int portNumber, portNumber2; // server will use this port number for listening
-    static DataInputStream input; //used to store client messages for prosessing
-    static PrintStream output; //used to send messages back to client
-    static Scanner sc;
-    static ArrayList<String> log;
-    static boolean quit = false;
-    static boolean threadSwitch = true;
-    public final static int FILE_SIZE = 6022386; // file size temporary hard coded
-
-    Server(String name) {
-        threadName = name;
-        //System.out.println("Creating " + threadName);
-    }
-
-    public void run() {
-        System.out.println("Running " + threadName);
-        System.out.println(threadName);
-        int i = 0;
-        while (quit == false) {
-            if (i == 0) {
-                i++;
-                portNumber = 4444;
-                portNumber2 = 8888;
-                System.out.println(getServerIP());
-                setup();
-                setupClientSocket();
-            } else if (i == 1) {
-                //running...
-                run2();
+public class Server{
+    static ServerSocket MyService = null; //stream socket to listen in for clients requests (TCP)
+    static Socket clientSocket = null; //socket sent from client to server
+    static int users = 20; // The server can accept up to maxUser connections at a time.
+    static clientThreads[] threads = new clientThreads[users];
+    
+    public static void main(String args[]) {
+        Scanner sc = new Scanner(System.in);
+        String response;
+        int portNumber = 4444; //server will use this port number for listening for new client connections
+        String port = "";
+        String line = "\n-------------------------------------------------------------------------------------------------------------------------\n";
+        while(true){
+            System.out.println("Port number = " +portNumber +"\nEnter 'yes' to continue or 'no' to  change the default port number:");
+            response = sc.nextLine();
+            if (response.equalsIgnoreCase("no")){
+                System.out.println("Enter the new port number:");
+                try{
+                    port = sc.nextLine();
+                    portNumber = Integer.parseInt(port);
+                    break;
+                }
+                catch (NumberFormatException e){
+                    System.err.println("Please enter a port number with digits only. You entered: "+port);
+                }
+            }    
+            else if(response.equalsIgnoreCase("yes")){
+                break;
+            }
+            else {
+                System.out.println("Please enter 'yes' or 'no'. You entered: "+response);
             }
         }
-        //exiting...
-        closeSockets();
-        exit();
-    }
-
-    public void start() {
-        //System.out.println("Starting " + threadName);
-        if (t == null) {
-            t = new Thread(this, threadName);
-            t.start();
-        }
-    }
-
-    //initialization...
-    public static void setup() {
+        getServerIP(); //prints out full details of inet ip address
+        
+        //create socket called MyService on given port number
         try {
             MyService = new ServerSocket(portNumber);
-            System.out.println("Server socket setup complete!");
+            System.out.println("Server is now listening for clients...");
         } catch (IOException e) {
-            System.out.println("ERROR: Server setup method says: " + e);
+            System.out.println(e);
         }
-    }
-
-    //capturing client socket for processing...
-    public static void setupClientSocket() {
-        try {
-            System.out.println("Server waiting on Clients to connect");
-            serviceSocket = MyService.accept();
-            System.out.println("Server-client socket setup complete!");
-        } catch (IOException e) {
-            System.out.println("ERROR: Server-client setup method says: " + e);
-        }
-    }
-
-    //method to make program run via command line until exit command is supplied...
-    public static void run2() {
-        DataInputStream serverInputStream = dataInputStream(); //messages sent to the server (from client)
-        PrintStream serverOutputStream = dataOutputStream(); //messages sent from the server (to client)
-        Scanner serverMsgIn = new Scanner(serverInputStream, "UTF-8"); //used to store incoming messages from client 
-        log = new ArrayList();
-        log.add("Chat started"); //add first message to server log
-        String nextMsg; //buffer to store incoming messages from client
-        int fileSendSwitch = 0;
-        int fileReceiveSwitch = 0;
-        //int extension = 1;
-        while (!log.isEmpty()) { //while the log is not empty
-            //perhaps don't qualify threads    
-            try {
-                if (!serverMsgIn.hasNextLine()) { //if scanner does not have next line                   
-                    //setupClientSocket();
-                }
-                else { //Scanner has next line  
-                    //System.out.println("Waiting for client command...");
-                    nextMsg = serverMsgIn.nextLine(); //is the next message incoming from client
-                    if (nextMsg.contains(":sendfile") && fileReceiveSwitch == 0) { //in the case that a client sends an image                     
-                        System.out.println("Client is attempting to send file...");
-                        log.add("Client is attempting to send file...");
-                        //serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
-                        serverOutputStream.println(log); //sends client last message in the log, ideally the whole log: OUTPUT
-                        //
-                        System.out.println("Waiting for file name:");
-                        String fileName = serverMsgIn.nextLine(); //INPUT
-                        System.out.println("File name: "+fileName);
-                        serverFileRecieve(fileName); //key method that implements, recieves file: INPUT
-                        System.out.println("File has been recieved!!!");
-                        //progression...
-                        while (serverMsgIn.hasNext()){
-                            System.out.println(serverMsgIn.nextLine()); //CLEARING REMNANTS OF THE IMAGE
-                        }
-                        log.add("File "+fileName+" has successfully been recieved!!");
-                        serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
-                        //
-                        fileReceiveSwitch = 1;  
-                    } 
-                    else if (nextMsg.contains(":getfile") && fileSendSwitch == 0) { //in the case that a client sends an image                     
-                        System.out.println("Client is attempting to get file...");
-                        log.add("Client is attempting to get file...");
-                        //serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
-                        serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
-                        //
-                        System.out.println("Waiting for client to send file name...");
-                        //
-                        String fileName = serverMsgIn.nextLine(); //takes in name of file 
-                        System.out.println("File name: "+fileName);
-                        log.add("File name :"+fileName);
-                        serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
-                        //
-                        serverFileSend(fileName); //key implementing method, sends file to client
-                        System.out.println("File has been sent!!!");
-                        //Output stream might have been closed
-                        //progression...
-                        fileSendSwitch = 1;
+        
+        //new client thread created for each client connected to server.
+        while (true){
+            try{
+                clientSocket = MyService.accept();
+                int i;
+                for (i = 0; i< threads.length; i++){
+                    if(threads.length == 0){
+                      (threads[i] =  new clientThreads(clientSocket, threads)).start();
+                      break;  
                     }
-                    else { //in the case that a simple text message is sent
-                        System.out.println(nextMsg); //print to console incoming messages from client
-                        log.add(nextMsg); //add the clients message to the log
-                        //serverOutputStream.println(log.get(log.size()-1)); //sends client last message in the log, ideally the whole log
-                        serverOutputStream.println(log); //sends client last message in the log, ideally the whole log
-                        fileSendSwitch = 0;
-                        fileReceiveSwitch = 0;
+                    else if(threads[i] == null){
+                        (threads[i] =  new clientThreads(clientSocket, threads)).start();
+                        break;
                     }
                 }
-            } catch (Exception e) {
-                System.out.println("Server run method exception says: " + e);
+                
+                // Once max number of clients are connected to server, server prevents other potential clients until a connected client disconnects.
+                if (i == users){
+                    try (PrintStream output = new PrintStream(clientSocket.getOutputStream())) {
+                        output.println(line+"Please try to connect again later. Server has reached its maximum number of clients.");
+                    }
+                    clientSocket.close(); 
+                }
+            }
+            catch (IOException e){
+                System.out.println(e);
             }
         }
     }
-
-    public static void serverFileRecieve(String fileToReceive) throws FileNotFoundException, IOException {
-        int bytesRead;
-        int current = 0;
-        FileOutputStream fos = null;
-        BufferedOutputStream bos = null;
-        ServerSocket servsock = null;
-        Socket sock = null;
-        try {
-            servsock = new ServerSocket(portNumber2);
-            System.out.println("Connecting...");
-            // receive file
-            byte [] mybytearray  = new byte [FILE_SIZE];
-            InputStream is = input;
-            fos = new FileOutputStream(fileToReceive);
-            bos = new BufferedOutputStream(fos);
-            bytesRead = is.read(mybytearray,0,mybytearray.length);
-            current = bytesRead;
-            do {
-               bytesRead =
-                  is.read(mybytearray, current, (mybytearray.length-current));
-               if(bytesRead >= 0) current += bytesRead;
-            } while(bytesRead > -1);
-            bos.write(mybytearray, 0 , current);
-            bos.flush();
-            is.close();
-            System.out.println("File " + fileToReceive + " downloaded (" + current + " bytes read)");
-        }
-        finally {
-            if (fos != null) fos.close();
-            if (bos != null) bos.close();
-            if (servsock != null) servsock.close();
-        } 
-    }
     
-    public static void serverFileSend(String fileToSend) throws FileNotFoundException, IOException{
-            FileInputStream fis = null;
-            BufferedInputStream bis = null;
-            OutputStream os = null;
-            ServerSocket servsock = null;
-            Socket sock = null;
-            try {
-                servsock = new ServerSocket(portNumber2);       
-                System.out.println("Waiting...");
-                try {
-                    sock = servsock.accept();
-                    System.out.println("Accepted connection : " + sock);
-                    // send file
-                    File myFile = new File (fileToSend);
-                    byte [] mybytearray  = new byte [(int)myFile.length()];
-                    fis = new FileInputStream(myFile);
-                    bis = new BufferedInputStream(fis);
-                    bis.read(mybytearray,0,mybytearray.length);
-                    os = sock.getOutputStream();
-                    System.out.println("Sending " + fileToSend + "(" + mybytearray.length + " bytes)");
-                    os.write(mybytearray,0,mybytearray.length);
-                    os.flush();
-                    System.out.println("Done.");
-                }
-                finally {
-                    if (bis != null) bis.close();
-                    if (os != null) os.close();
-                    if (sock!=null) sock.close();
-                }        
-        }
-        finally {
-            if (servsock != null) servsock.close();
-        }
-    }
-
-    //server processing requests from the client...
-    public static DataInputStream dataInputStream() {
-        try {
-            input = new DataInputStream(serviceSocket.getInputStream());
-            //System.out.println("Server dataInputStream method says: input = "+input);
-        } catch (IOException e) {
-            System.out.println("ERROR: Server dataInputStream method says: " + e);
-        }
-        return input;
-    }
-
-    //client output stream to send data to the server
-    public static PrintStream dataOutputStream() {
-        try {
-            output = new PrintStream(serviceSocket.getOutputStream());
-            //System.out.println("Server dataOutputStream method says: output = "+output);
-        } catch (IOException e) {
-            System.out.println("ERROR: Server dataOutputStream method says: " + e);
-        }
-        return output;
-    }
-
-    //closing server sockets
-    public static void closeSockets() {
-        try {
-            output.close();
-            input.close();
-            serviceSocket.close();
-            MyService.close();
-            System.out.println("Server closeSockets method says: All sockets closed successfully!");
-        } catch (IOException e) {
-            System.out.println("ERROR: Server closeSockets method says: " + e);
-        }
-    }
-
-    public static String getServerIP() {
+    public static void getServerIP() {
         String ip = "";
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -294,20 +108,132 @@ public class Server implements Runnable {
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
-
-        return ip;
     }
+  
+}
 
-    public boolean isDead() {
-        if (t.isAlive()) {
-            return false;
-        } else {
-            return true;
+
+//this class is handles the threads responsible for communicating with clientts
+class clientThreads extends Thread{
+    private  String client = null;
+    private  BufferedReader input = null;
+    private  PrintStream output = null;
+    private  Socket clientSocket = null;
+    private  clientThreads[] threads = null;
+    private final  int users;
+    String line = "\n-------------------------------------------------------------------------------------------------------------------------\n";
+    String help = line+"To leave enter '/exit' in a new line.\nTo send private messages enter user name with '@' sign in front of name, a space and the message e.g. @Bob 'Hey Bob'\nTo display these intructions again enter '/help'"+line;
+    
+    public clientThreads(Socket clientSocket, clientThreads[] threads){
+        this.clientSocket = clientSocket;
+        this.threads = threads;
+        users = threads.length;
+    }
+    
+    @Override
+    public void run(){
+        try{
+            // input and output streams created for each client thread
+            input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            output = new PrintStream(clientSocket.getOutputStream());
+            String user;
+            while (true){
+                output.println("Enter your name to display in chat: ");
+                user = input.readLine().trim();
+                if (!user.contains("@")){
+                    break;
+                }
+                else{
+                    output.println("The name should not contain '@' character.");
+                }
+            }
+            
+            //Opening messages for clients.
+            output.println(line+"******* Welcome to ChatAPP, " +user + "! *******\n");
+            output.println(help);
+            synchronized(this){
+                for (clientThreads thread : threads) {
+                    if (thread != null && thread == this) {
+                        client = "@"+user;
+                        break;
+                    }
+                }
+                for (clientThreads thread : threads) {
+                    if (thread != null && thread != this) {
+                        thread.output.println("***New user: " +user+" has entered the chat room***");
+                    }
+                }                       
+            }
+            
+            //Handling communication between clients.
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            
+            while(true){
+                String nxtMsg = input.readLine();
+                Date date = new Date();
+                if (nxtMsg.startsWith("/exit")){
+                    break;
+                }
+                // Privated messages directed to intended user
+                if (nxtMsg.startsWith("@")){
+                    String[] msg = nxtMsg.split("\\s", 2);
+                    if (msg.length > 1 && msg[1] != null){
+                        msg[1] = msg[1].trim();
+                        if (!msg[1].isEmpty()){
+                            synchronized(this){
+                                for (clientThreads thread : threads) {
+                                    if (thread != null && thread != this && thread.client != null && thread.client.equals(msg[0])) {
+                                        thread.output.println("<"+dateFormat.format(date)+"> "+user+": "+msg[1]);
+                                        this.output.println("<"+dateFormat.format(date)+"> "+user+": " + msg[1]);
+                                        break;
+                                    }
+                                }    
+                            }
+                        }
+                    }
+                }
+                else {
+                    // Public messages intended to all users
+                    synchronized(this){
+                        if (nxtMsg.equals("/help")){
+                            this.output.println(help);
+                        }
+                        else{
+                            for (clientThreads thread : threads) {
+                                if (thread != null && thread.client != null) {
+                                    thread.output.println("<"+dateFormat.format(date)+"> "+user+": "+nxtMsg);
+                                }
+                            }
+                    }
+                    }
+                }
+            }
+            //when user exits, breaks out of loop and displays following message to all users
+            synchronized(this){
+                for (clientThreads thread : threads) {
+                    if (thread != null && thread != this && thread.client != null) {
+                        thread.output.println("***User: "+user+" has left the chat room***");
+                    }
+                }
+            }
+            output.println("***"+user+" You've logged out***");
+        
+            //Create space in threads list for another client
+            synchronized(this){
+                for (int i =0; i<threads.length;i++){
+                    if (threads[i] == this){
+                        threads[i] = null;
+                    }
+                }
+            }
+            //Close socket, input and output streams.
+            input.close();
+            output.close();
+            clientSocket.close();
         }
-    }
-
-    public static void exit() {
-        System.out.println("Server closed.");
+        catch (IOException e){
+            System.out.println(e);
+        }
     }
 
 }
