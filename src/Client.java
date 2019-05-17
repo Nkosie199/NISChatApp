@@ -9,6 +9,8 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Client implements Runnable{
     static Socket MyClient = null; //uses TCP
@@ -17,8 +19,10 @@ public class Client implements Runnable{
     private static BufferedReader clientInput = null;
     private static PrintStream output = null;
     private static boolean socketClosed = false;
+    private static final MYRSA myrsa = new MYRSA();
+    private static final AES aes = new AES("some random stri");
 
-    public static void main(String[] args) throws IOException{
+    public static void main(String[] args) throws IOException, Exception{
         String machineName = "localhost"; //specifies machine name in IP address form
         int portNumber = 4444;
         String res;
@@ -68,9 +72,11 @@ public class Client implements Runnable{
             try{
                 //Threads read server input
                 new Thread(new Client()).start();
-                //Writes to server 
+                //Writes to server; encryption should occur here...
                 while (!socketClosed){
-                    output.println(clientInput.readLine().trim());
+                    String msg2server = clientInput.readLine().trim();
+                    String encryptedMsg2Server = aes.encrypt(msg2server);
+                    output.println(encryptedMsg2Server);
                 }
                 output.close();
                 serverInput.close();
@@ -89,9 +95,18 @@ public class Client implements Runnable{
         int i = 0;
         String line = "\n-----------------------------------------------------------------------------------------------------------------------\n";
         String data ="";
+        //generate and send server public and session keys and send them to server...
+        try {
+            System.out.println("generating public and session key pair...");
+            myrsa.generateKeyPair();
+        } catch (Exception ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
         try{
             while((serverMessage = serverInput.readLine()) != null){
                 if (!data.contains(serverMessage)){
+                    //this is where the decryption of the server message should occur...
                     System.out.println(serverMessage);
                     if (serverMessage.contains(line+"You've logged out"+line)){
                         break;

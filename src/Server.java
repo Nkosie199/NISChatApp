@@ -12,12 +12,16 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Server{
     static ServerSocket MyService = null; //stream socket to listen in for clients requests (TCP)
     static Socket clientSocket = null; //socket sent from client to server
     static int users = 20; // The server can accept up to maxUser connections at a time.
     static clientThreads[] threads = new clientThreads[users];
+    private static final MYRSA myrsa = new MYRSA();
+    
     
     public static void main(String args[]) {
         Scanner sc = new Scanner(System.in);
@@ -123,6 +127,7 @@ class clientThreads extends Thread{
     private final  int users;
     String line = "\n-------------------------------------------------------------------------------------------------------------------------\n";
     String help = line+"To leave enter '/exit' in a new line.\nTo send private messages enter user name with '@' sign in front of name, a space and the message e.g. @Bob 'Hey Bob'\nTo display these intructions again enter '/help'"+line;
+    private static final AES aes = new AES("some random stri");
     
     public clientThreads(Socket clientSocket, clientThreads[] threads){
         this.clientSocket = clientSocket;
@@ -139,7 +144,7 @@ class clientThreads extends Thread{
             String user;
             while (true){
                 output.println("Enter your name to display in chat: ");
-                user = input.readLine().trim();
+                user = aes.decrypt(input.readLine().trim());
                 if (!user.contains("@")){
                     break;
                 }
@@ -149,7 +154,7 @@ class clientThreads extends Thread{
             }
             
             //Opening messages for clients.
-            output.println(line+"******* Welcome to ChatAPP, " +user + "! *******\n");
+            output.println(line+"******* Welcome to ChatAPP, " +user+ "! *******\n");
             output.println(help);
             synchronized(this){
                 for (clientThreads thread : threads) {
@@ -169,7 +174,9 @@ class clientThreads extends Thread{
             DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             
             while(true){
-                String nxtMsg = input.readLine();
+                String encryptedNxtMsg = input.readLine();
+                //this is where the decryption of encrypted client messages occurs...
+                String nxtMsg = aes.decrypt(encryptedNxtMsg);
                 Date date = new Date();
                 if (nxtMsg.startsWith("/exit")){
                     break;
@@ -183,6 +190,7 @@ class clientThreads extends Thread{
                             synchronized(this){
                                 for (clientThreads thread : threads) {
                                     if (thread != null && thread != this && thread.client != null && thread.client.equals(msg[0])) {
+                                        //this is where the encryption of msg[1] should occur...
                                         thread.output.println("<"+dateFormat.format(date)+"> "+user+": "+msg[1]);
                                         this.output.println("<"+dateFormat.format(date)+"> "+user+": " + msg[1]);
                                         break;
@@ -201,6 +209,7 @@ class clientThreads extends Thread{
                         else{
                             for (clientThreads thread : threads) {
                                 if (thread != null && thread.client != null) {
+                                    //this is where the encryption of nxtMsg should occur...
                                     thread.output.println("<"+dateFormat.format(date)+"> "+user+": "+nxtMsg);
                                 }
                             }
@@ -233,6 +242,8 @@ class clientThreads extends Thread{
         }
         catch (IOException e){
             System.out.println(e);
+        } catch (Exception ex) {
+            Logger.getLogger(clientThreads.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
