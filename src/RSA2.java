@@ -9,19 +9,42 @@ import javax.crypto.*;
 
 /**
  * RSA2
- */
+ * contains public and private keys used by user
+ */ 
 public class RSA2 {
 
-  private String publicKeyPath, privateKeyPath;
   private PublicKey publicKey;
   private PrivateKey privateKey;
   
+  /**
+   * ctor loads key files from files passed in as args
+   * if keys could not be loaded, it generates them
+   * @param pubKeyPath
+   * @param priKeyPath
+   * @throws NoSuchAlgorithmException
+   */
   public RSA2(String pubKeyPath, String priKeyPath) throws NoSuchAlgorithmException {
-    publicKeyPath = pubKeyPath;
-    privateKeyPath = priKeyPath;
-    generateKeyPairs();
-  }  
+    try{
+      loadPublicKey(pubKeyPath);
+      loadPrivateKey(priKeyPath);
+    } catch (Exception e){
+      System.out.println("Could not load files. \nGenerating new keys...");
+      generateKeyPairs();
+    }
+  }
 
+  /**
+   * generates keys randomly
+   * @throws Exception
+   */
+  public RSA2() throws Exception {
+    generateKeyPairs();
+  }
+
+  /**
+   * generates key pairs with keysize 2048 using RSA
+   * @throws NoSuchAlgorithmException
+   */
   public void generateKeyPairs() throws NoSuchAlgorithmException {
     KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
     kpg.initialize(2048);
@@ -30,6 +53,10 @@ public class RSA2 {
     privateKey = keyPair.getPrivate();
   }
 
+  /**
+   * loads public key from raw files 
+   * @param filename
+   */
   public void loadPublicKey(String filename) {
     FileInputStream fis = null;
     ObjectInputStream ois = null;
@@ -50,6 +77,10 @@ public class RSA2 {
     }
   }
 
+  /**
+   * loads pirvate key from raw file
+   * @param filename
+   */
   public void loadPrivateKey(String filename) {
     FileInputStream fis = null;
     ObjectInputStream ois = null;
@@ -74,35 +105,76 @@ public class RSA2 {
 
   public static void main(String[] args) throws Exception {
     //GENERATE PUBLIC KEY
-    RSA2 rsa2 = new RSA2("pub.key", "pri.key");
+    RSA2 rsa2 = null;
 
-    if(args.length == 2){
+    if(args.length == 2){ // load from file
       rsa2.loadPublicKey(args[0]);
       rsa2.loadPrivateKey(args[1]);
+    } else { // generate new keys
+      rsa2 = new RSA2();
     }
 
-    // SETUP KEYPAIR PARAMS (Key specs)
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    RSAPublicKeySpec rsaPublicKeySpec = keyFactory.getKeySpec(rsa2.getPublicKey(), RSAPublicKeySpec.class);
-    RSAPrivateKeySpec rsaPrivateKeySpec = keyFactory.getKeySpec(rsa2.getPrivateKey(), RSAPrivateKeySpec.class);
-
-    // SAVE KEYS
-    rsa2.saveKeys(rsa2.getPublicKeyPath(), rsaPublicKeySpec.getModulus(), rsaPublicKeySpec.getPublicExponent());
-    rsa2.saveKeys(rsa2.getPrivateKeyPath(), rsaPrivateKeySpec.getModulus(), rsaPrivateKeySpec.getPrivateExponent());
+    
 
     //CREATE MESSAGE
     String message = "This is top secret";
     System.out.println("original message: " + message);
 
-    //ENCRYPT MESSAGE
-    System.out.println("Encrypted message: " + new String(rsa2.encrypt(message)));    
+    //ENCRYPT MESSAGE using recipient's pub key then send
+    PublicKey bobPublicKey = rsa2.getPublicKey();
+    byte[] encMsgBytes = rsa2.encrypt(message, bobPublicKey);
+    System.out.println("Encrypted message: " + new String(encMsgBytes));    
+
+    //SIGN MESSAGE
+    byte[] msgSignature = rsa2.sign(encMsgBytes);
+
+    System.out.println("Check signature: " + rsa2.verify(encMsgBytes,msgSignature));    
 
     //DECRYPT MESSAGE
-    System.out.println("Decrypted message: " + new String(rsa2.decrypt(rsa2.encrypt(message))));
+    System.out.println("Decrypted message: " + new String(rsa2.decrypt(encMsgBytes)));
 
   }
 
-  public byte[] encrypt(String msg) {
+  /**
+   * signs incoming data
+   * @param data
+   * @return the message signature for the data
+   * @throws Exception
+   */
+  public byte[] sign(byte[] data) throws Exception {
+    //CREATE SIGNATURE
+    Signature signature = Signature.getInstance("SHA1withRSA");
+
+    //SIGN MESSAGE
+    signature.initSign(privateKey);
+    signature.update(data);
+    return signature.sign();
+  }
+
+  /**
+   * checks if the data has been signed with a given private key by 
+   * using the public key associated with it.
+   * @param data
+   * @param msgSignature
+   * @return the validation status of the data-signature pair
+   * @throws Exception
+   */
+  public boolean verify(byte[] data, byte[] msgSignature) throws Exception {
+    //CREATE SIGNATURE
+    Signature signature = Signature.getInstance("SHA1withRSA");
+
+    //VERIFY MESSAGE
+    signature.initVerify(publicKey);
+    signature.update(data);
+    return signature.verify(msgSignature);
+  }
+
+  /**
+   * encrypts given string using the intended recipient's public key
+   * @param msg
+   * @return
+   */
+  public byte[] encrypt(String msg, PublicKey publicKey) {
     //ENCRYPTING msg
 
     byte[] msgBytes = msg.getBytes();
@@ -114,10 +186,11 @@ public class RSA2 {
       //DATA ENCRYPTED
 
       //---- use if bytes cause issues
-      
+
       //ENCODED ENRYPTED MESSAGE
       // Base64.Encoder encoder = Base64.getEncoder();
       // String encMsgString =  encoder.encodeToString(encMsgBytes);
+      //------- end if -------------
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -140,12 +213,10 @@ public class RSA2 {
   }
 
   /* GETTERS */
-  public String getPrivateKeyPath() { return privateKeyPath; }
-  public String getPublicKeyPath() { return publicKeyPath; }
   public PrivateKey getPrivateKey() { return privateKey; }
   public PublicKey getPublicKey() { return publicKey; }
 
-  public void saveKeys(String filename, BigInteger modulus, BigInteger exp) throws Exception {
+  public void saveKey(String filename, BigInteger modulus, BigInteger exp) throws Exception {
     FileOutputStream fos = null;
     ObjectOutputStream oos = null;
     try {
@@ -161,5 +232,15 @@ public class RSA2 {
       if(oos != null) oos.close();
       if(fos != null) fos.close();
     }
+  }
+
+  public void saveKeys() throws Exception {
+    // SETUP KEYPAIR PARAMS (Key specs)
+    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+    RSAPublicKeySpec rsaPublicKeySpec = keyFactory.getKeySpec(publicKey, RSAPublicKeySpec.class);
+    RSAPrivateKeySpec rsaPrivateKeySpec = keyFactory.getKeySpec(privateKey, RSAPrivateKeySpec.class);
+
+    saveKey("pub.key", rsaPublicKeySpec.getModulus(), rsaPublicKeySpec.getPublicExponent());
+    saveKey("pri.key", rsaPrivateKeySpec.getModulus(), rsaPrivateKeySpec.getPrivateExponent());
   }
 }
