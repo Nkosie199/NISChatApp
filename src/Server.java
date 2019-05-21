@@ -12,40 +12,31 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.security.GeneralSecurityException;
-import java.security.Key;
-import java.security.KeyFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Base64;
-import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import sun.misc.BASE64Decoder;
 
 public class Server{
     static ServerSocket MyService = null; //stream socket to listen in for clients requests (TCP)
     static Socket clientSocket = null; //socket sent from client to server
     static int users = 20; // The server can accept up to maxUser connections at a time.
     static clientThreads[] threads = new clientThreads[users];
-    private static final MYRSA myrsa = new MYRSA();
+    public static ArrayList<PubKey> pubkeys = new ArrayList<>();
     
     public static void main(String args[]) {
         Scanner sc = new Scanner(System.in);
@@ -98,8 +89,7 @@ public class Server{
                         (threads[i] =  new clientThreads(clientSocket, threads)).start();
                         break;
                     }
-                }
-                
+                }                
                 // Once max number of clients are connected to server, server prevents other potential clients until a connected client disconnects.
                 if (i == users){
                     try (PrintStream output = new PrintStream(clientSocket.getOutputStream())) {
@@ -136,34 +126,29 @@ public class Server{
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
-    }
-  
+    } 
 }
 
 
 //this class is handles the threads responsible for communicating with clientts
 class clientThreads extends Thread{
-    private Client c;
     private String client = null;
     private ObjectInputStream ois = null;
     private ObjectOutputStream oos = null;
-    private Scanner sc = new Scanner(System.in);
     private BufferedReader input = null;
     private PrintStream output = null;
     private Socket clientSocket = null;
     private clientThreads[] threads = null;
     private final int users;
     String line = "\n----------------------------------------------------------------------------------------------------------------------\n";
-    String line2 = "----------------------------------------------------------------------------------------------------------------------";
-    String help = line+"To leave enter '/exit' in a new line.\nTo send private messages enter user name with '@' sign in front of name, a space and the message e.g. @Bob 'Hey Bob'\nTo display these intructions again enter '/help'"+line;
+    String help = line+"To leave enter '/exit' in a new line.\nTo send private messages enter user name with '@' sign in front of name, a space and the message e.g. @Bob Hey Bob\nTo display these intructions again enter '/help'"+line;
     private static final AES aes = new AES("some random stri");
-    //private ArrayList<PubKeys> pubkeys = new ArrayList<>();
     private static Cipher ecipher, dcipher; //Required for DES
     
     public clientThreads(Socket clientSocket, clientThreads[] threads){
         this.clientSocket = clientSocket;
         this.threads = threads;
-        users = threads.length;
+        this.users = threads.length;
     }
     
     @Override
@@ -173,79 +158,88 @@ class clientThreads extends Thread{
             input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             output = new PrintStream(clientSocket.getOutputStream());
             ois = new ObjectInputStream(clientSocket.getInputStream());
+            oos = new ObjectOutputStream(clientSocket.getOutputStream());
             
             String user;
-            
             while (true){
-                output.println("Enter your name to display in chat: ");
-                //the first msg sent to the server is the username...
-                user = input.readLine().trim();
-                
-                if (!user.contains("@")){
-                    //c.setKeys(user); //generate and send server public and private keys...
-                    break;
-                }
-                else{
-                    System.out.println("The name should not contain '@' character.");
-                }
+                synchronized(this){
+                    output.println("Enter your name to display in chat: ");
+                    //the first msg sent to the server is the username...
+                    user = input.readLine().trim();
+                    if (!user.contains("@")){
+                        break;
+                    }
+                    else{
+                        System.out.println("The name should not contain '@' character.");
+                    }
+                }                
             }
             
             //Opening messages for clients.
-            output.println(line+"******* Welcome to ChatAPP, " +user+ "! *******\n");
+            output.println(line+"******* Welcome to ChatAPP, " +user+ "! *******");
             output.println(help);
+            PublicKey pubKey;
+            pubKey = (PublicKey) ois.readObject(); //new user's public key
+            Server.pubkeys.add(new PubKey ("@"+user, pubKey));
+            System.out.println("added "+user+"'s public key: "+pubKey+" to the keyring!");
+            
             synchronized(this){
                 for (clientThreads thread : threads) {
                     if (thread != null && thread == this) {
-                        client = "@"+user;
+                        this.client = "@"+user;
                         break;
                     }
-                }
+                }      
                 for (clientThreads thread : threads) {
                     if (thread != null && thread != this) {
                         thread.output.println("***New user: " +user+" has entered the chat room***");
                     }
                 }                       
             }
-            
-            //Handling communication between clients.
+            //Now handling communication between clients.
             DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             
             while(true){
-                //this is where the decryption of encrypted client messages occurs...
-                String messagetoreceiver[] = (String[]) ois.readObject();
-                //System.out.println("messagetoreceiver: "+messagetoreceiver);
-                PublicKey senderpubKey = (PublicKey) ois.readObject();
-                //System.out.println("senderpubKey: "+senderpubKey);
-                PrivateKey senderprivateKey = (PrivateKey) ois.readObject();
-                //System.out.println("senderprivateKey: "+senderprivateKey);
-                PublicKey receiverpubKey = (PublicKey) ois.readObject();
-                //System.out.println("receiverpubKey: "+receiverpubKey);
-                PrivateKey receiverprivateKey = (PrivateKey) ois.readObject();
-                //System.out.println("receiverprivateKey: "+receiverprivateKey);
-                
-                String nxtMsg = receiverside(messagetoreceiver, senderpubKey, senderprivateKey,  receiverpubKey, receiverprivateKey);
-                
+                System.out.print(">>>");
+                String nxtMsg = input.readLine();
+                System.out.println(client+": "+nxtMsg);
                 Date date = new Date();
                 // Privated messages directed to intended user
                 if (nxtMsg.startsWith("@")){
-                    String[] msg = nxtMsg.split("\\s", 2);
-                    if (msg.length > 1 && msg[1] != null){
-                        msg[0] = msg[0].trim();
-                        msg[1] = msg[1].trim();
-                        if (!msg[1].isEmpty()){
-                            synchronized(this){
-                                for (clientThreads thread : threads) {
-                                    if (thread != null && thread != this && thread.client != null && thread.client.equals(msg[0])) {
-                                        String msg2clients = "<"+dateFormat.format(date)+"> "+user+": "+msg[1];
-                                        //this is where the encryption of msg[1] should occur...
-                                        
-                                        thread.output.println(msg2clients); //output to client eg. @bob
-                                        this.output.println(msg2clients); //output to self
-                                        break;
-                                    }
-                                }    
+                    synchronized(this){
+                        String name = nxtMsg;
+                        //1) Writes to clients; PGP hashing and encryption should occur here...
+                        //Server must send sender recipient's public key
+                        boolean userPresent = false;
+                        for (PubKey p: Server.pubkeys){
+                            if (p.user.equals(name)){
+                                userPresent = true;
+                                this.output.println("Server is sending you their public key...");
+                                this.oos.writeObject(p.getPubKey()); //this = output to self
+                                break;
                             }
                         }
+                        if (userPresent){ //continue
+                            this.output.println("Secret message you would like to send to "+name+":");
+                            String res = (String) this.ois.readObject(); //await sender response - message encryted with recipent public key...
+                            System.out.println("server recieved this message: "+res);
+                            for (clientThreads thread : threads) {
+                                if (thread != null && thread != this && thread.client != null && thread.client.equals(name)) {
+                                    String msg2clients = "<"+dateFormat.format(date)+"> *** Encrypted message from "+this.client+" to "+thread.client+" ***: ";                  
+                                    thread.output.println(msg2clients); //output to recipient, notifying them to expect encrypted message
+                                    ///this part!!!
+                                    thread.oos.writeObject(res); //send sender response (message) to recipient...
+                                    System.out.println("sent, awaiting client "+thread.client+"'s confirmation...");
+                                    String confirm = (String) thread.ois.readObject(); //we must be notified that client got something
+                                    System.out.println("client has confirmed by saying: "+confirm);
+                                    break;
+                                }
+                            } 
+                            System.out.println("Done sending encrypted msg!");
+                        }
+                        else{
+                            this.output.println("Sorry, that user is not here!");
+                        }     
                     }
                 }
                 else if (nxtMsg.equals("/exit")){
@@ -255,18 +249,17 @@ class clientThreads extends Thread{
                     this.output.println(help);
                 }
                 else {
-                    // Public messages intended to all users
+                    // Public messages intended to all users, unecrypted
                     synchronized(this){
                         for (clientThreads thread : threads) {
                             if (thread != null && thread.client != null) {
-                                //this is where the encryption of nxtMsg should occur...
-                                thread.output.println("<"+dateFormat.format(date)+"> "+user+": "+nxtMsg);
+                                String msg2clients = "<"+dateFormat.format(date)+"> "+user+": "+nxtMsg;
+                                thread.output.println(msg2clients);
                             }
                         }
                     }
                 }
-            }
-            
+            }           
             //when user exits, breaks out of loop and displays following message to all users
             synchronized(this){
                 for (clientThreads thread : threads) {
@@ -289,6 +282,8 @@ class clientThreads extends Thread{
             input.close();
             output.close();
             clientSocket.close();
+            ois.close();
+            oos.close();
         }
         catch (IOException e){
             System.out.println(e);
@@ -297,7 +292,7 @@ class clientThreads extends Thread{
         }
     }
 
-    public static String receiverside(String messagetoreceiver[], PublicKey senderpubKey, PrivateKey senderprivateKey, PublicKey receiverpubKey, PrivateKey receiverprivateKey) throws Exception {
+    public String receiverside(String messagetoreceiver[], PublicKey senderpubKey, PrivateKey senderprivateKey, PublicKey receiverpubKey, PrivateKey receiverprivateKey) throws Exception {
 	//Receiver receives the message messagetoreceiver[] with messagetoreceiver[2] as secret key encrypted with receiver pub key
 	//Receiver decrypts the messagetoreceiver[2] with his/her privatekey
 	String receiverencodedsecretkey = decrypt(receiverpubKey, receiverprivateKey, messagetoreceiver[2], 1);
@@ -321,7 +316,6 @@ class clientThreads extends Thread{
             unzipstring[i] = decompress(messagetoreceiver[i]);
             System.out.println(unzipstring[i]);
 	}
-	
 	//Message has been received and is in unzipstring but check the digital signature of the sender i.e. verify the hash with senderpubkey
 	//So decrypting the encrypted hash in unzipstring with sender pub key
 	String receivedhash = decrypt(senderpubKey, senderprivateKey, unzipstring[1], 0);                                 
@@ -332,9 +326,46 @@ class clientThreads extends Thread{
 	if (receivedhash.equalsIgnoreCase(calculatedhash)) {
             System.out.println("\nReceived Hash == Calculated Hash\nThus, Confidentiality and Authentication both are achieved\nSuccessful PGP Simulation\n");
 	}
-        
         return unzipstring[0];
     }
+    
+    public String[] senderside(String msg, PublicKey senderpubKey, PrivateKey senderprivateKey, PublicKey receiverpubKey, PrivateKey receiverprivateKey) throws Exception {	
+	System.out.println("\nSender Side: Msg being sent = "+msg);
+        //2) Generating SHA-512 hash of original message
+        String hashedMsg2Server = sha512(msg); 
+        System.out.println("\nSender Side: Hash of Message = "+hashedMsg2Server);
+        //3) Encrypt the message hash with sender private keys -> Digital Signature
+        String encryptedprivhash = encrypt(senderpubKey, senderprivateKey, hashedMsg2Server, 0);
+        System.out.println("\nSender Side: Hash Encrypted with Sender Private Key (Digital Signature) = "+ encryptedprivhash); 
+        //4) Append original message and encrypted hash
+        String beforezipstring[] = {msg, encryptedprivhash};
+        System.out.println("\nSender Side: Message before Compression=\n"+beforezipstring[0]+beforezipstring[1]);
+        //5) Apply zip to beforezipbytes[][]
+        String afterzipstring[] = new String[beforezipstring.length];
+        System.out.println("\nSender Side: Message after Compression=");
+        for (int i=0;i<beforezipstring.length;i++) {
+            afterzipstring[i] = compress(beforezipstring[i]);
+            System.out.println(afterzipstring[i]);
+        }
+        //6) Encrypt zipstring with DES
+        SecretKey key = KeyGenerator.getInstance("DES").generateKey();
+        System.out.println("\nSender Side: SecretKey DES = \n"+key.toString());
+        String afterzipstringDES[] = new String[afterzipstring.length+1];
+        System.out.println("\nSender Side: Compressed Message Encrypted with SecretKey = ");
+        for (int i=0;i<afterzipstring.length;i++) {
+            afterzipstringDES[i] = encryptDES(afterzipstring[i], key);
+            System.out.println(afterzipstringDES[i]);
+        }
+        //7) Encrypt DES key with Receiver Public Key using RSA
+        String encodedKey = Base64.getEncoder().encodeToString(key.getEncoded()); //SecretKey is base64 encoded since direct string encryption gives key in string format during decryption which cant be converted to SecretKey Format
+        String keyencryptedwithreceiverpub = encrypt(receiverpubKey, receiverprivateKey, encodedKey, 1);
+        System.out.println("\nSender Side: DES SecretKey Encrypted with Receiver Public Key = \n"+keyencryptedwithreceiverpub);            
+        afterzipstringDES[2] = keyencryptedwithreceiverpub; //Decrypting DES key with Receiver Private Key using RSA
+        String messagetoreceiver[] = afterzipstringDES;
+        System.out.println("\nSender Side: to receiver = \n"+messagetoreceiver+"\n\n\n");
+        return messagetoreceiver;
+    }
+    
 
     public static String encryptDES(String str, SecretKey key) throws Exception {
 	ecipher = Cipher.getInstance("DES");
@@ -427,6 +458,5 @@ class clientThreads extends Thread{
             byte[] utf8 = cipher.doFinal(encrypted);
             return new String(utf8, "UTF8");
         }
-    }
-    
+    }  
 }
