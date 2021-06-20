@@ -7,7 +7,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 public class AES {
-
   private static String ALGO = "AES";
   private byte[] keyValue;
 
