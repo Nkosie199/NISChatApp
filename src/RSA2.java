@@ -113,6 +113,9 @@ public class RSA2 {
     } else { // generate new keys
       rsa2 = new RSA2();
     }
+
+    
+
     //CREATE MESSAGE
     String message = "This is top secret";
     System.out.println("original message: " + message);
@@ -124,6 +127,7 @@ public class RSA2 {
 
     //SIGN MESSAGE
     byte[] msgSignature = rsa2.sign(encMsgBytes);
+
     System.out.println("Check signature: " + rsa2.verify(encMsgBytes,msgSignature));    
 
     //DECRYPT MESSAGE
