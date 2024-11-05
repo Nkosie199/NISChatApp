@@ -12,27 +12,17 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.security.GeneralSecurityException;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.crypto.Cipher;
@@ -138,8 +128,8 @@ public class Server {
         while (addresses.hasMoreElements()) {
           InetAddress addr = addresses.nextElement();
           ip = addr.getHostAddress();
-          //String fullCredentials = iface.getDisplayName() + " " + ip;
-          //System.out.println(ip);
+          String fullCredentials = iface.getDisplayName() + " " + ip;
+          System.out.println(ip);
         }
       }
     } catch (SocketException e) {
