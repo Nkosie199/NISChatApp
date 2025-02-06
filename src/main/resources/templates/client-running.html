@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Client Log</title>
+</head>
+<body>
+    <h1>Client Started</h1>
+    <p>Client is running on port: <span th:text="${port}"></span></p>
+    <h2>Client Logs</h2>
+    <pre th:text="${logOutput}"></pre>
+</body>
+</html>

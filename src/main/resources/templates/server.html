@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Server Log</title>
+</head>
+<body>
+    <h2>Start the Server</h2>
+    <form action="/server/start" method="post">
+        <label for="port">Port: </label>
+        <input type="number" id="port" name="port" value="4444">
+        <button type="submit">Start Server</button>
+    </form>
+</body>
+</html>
