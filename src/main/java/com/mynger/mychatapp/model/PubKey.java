@@ -1,17 +1,12 @@
 package com.mynger.mychatapp.model;
 import java.security.PublicKey;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@AllArgsConstructor
+@Getter
 public class PubKey {
-    public String user;
-    private PublicKey pubKey;
-    
-    public PubKey(String u, PublicKey p){
-        user = u;
-        pubKey = p;
-    }
-    
-    public PublicKey getPubKey(){
-        return pubKey;
-    }
-    
+    public String username;
+    private PublicKey publicKey;
 }

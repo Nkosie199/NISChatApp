@@ -1,22 +1,35 @@
-package com.mynger.mychatapp.model;
+package com.mynger.mychatapp.util;
+
 /**
  * AES
  */
 import java.security.Key;
 import java.util.Base64;
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class AES {
+public class AESUtils {
 
   private static String ALGO = "AES";
   private byte[] keyValue;
 
-  public AES(String key) {
+  public AESUtils(String key) {
     keyValue = key.getBytes();
+  }
+
+  public static String encryptAES(String str, SecretKey key) throws Exception {
+    Cipher ecipher = Cipher.getInstance("AES");
+    ecipher.init(Cipher.ENCRYPT_MODE, key);
+    // Encode the string into bytes using utf-8
+    byte[] utf8 = str.getBytes("UTF8");
+    // Encrypt
+    byte[] enc = ecipher.doFinal(utf8);
+    // Encode bytes to base64 to get a string
+    return Base64.getEncoder().encodeToString(enc);
   }
 
   public String encrypt(String msg) throws Exception {
@@ -28,6 +41,16 @@ public class AES {
     Base64.Encoder encoder = Base64.getEncoder();
     String encoded_enc_msg = encoder.encodeToString(enc_msg);
     return encoded_enc_msg;
+  }
+
+  public static String decryptAES(String st, SecretKey key) throws Exception {
+    Cipher dcipher = Cipher.getInstance("AES");
+    dcipher.init(Cipher.DECRYPT_MODE, key);
+    // Decode base64 to get bytes
+    byte[] dec = Base64.getDecoder().decode(st);
+    byte[] utf8 = dcipher.doFinal(dec);
+    // Decode using utf-8
+    return new String(utf8, "UTF8");
   }
 
   public String decrypt(String encoded_enc_msg) throws Exception {
@@ -44,15 +67,5 @@ public class AES {
    */
   public byte[] getKeyValue() {
     return keyValue;
-  }
-
-  public static void main(String[] args) throws Exception{
-    AES aes = new AES("some random stri");
-    String msg_to_enc = "This message is top secret"; 
-    log.info("Message to enc: " + msg_to_enc);
-    String enc_msg = aes.encrypt(msg_to_enc);
-    log.info("Encrypted message: " + enc_msg);
-    String dec_msg = aes.decrypt(enc_msg);
-    log.info("Decrypted message: " + dec_msg);
   }
 }
