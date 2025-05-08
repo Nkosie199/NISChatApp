@@ -1,0 +1,69 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}" lang="en">
+
+<head>
+    <title>Messages</title>
+</head>
+
+<body>
+
+    <div layout:fragment="content">
+        <div class="container main-content">
+            <div class="row">
+                <div class="col-7">
+                    <h3>Messages</h3>
+                </div>
+                <div class="col text-end">
+                    <a th:href="@{/messages/add}">Add New Message</a>
+                </div>
+            </div>
+
+            <table id="table" class="table table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Content</th>
+                        <th scope="col">Author</th>
+                        <th scope="col">Recipient</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Size (KB)</th>
+                        <th scope="col">Link</th>
+                        <th scope="col">Ratings</th>
+                        <th scope="col">Audience</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="message, iterStat : ${messages}">
+                        <td th:text="${iterStat.index + 1}"></td>
+                        <td th:text="${message.title}"></td>
+                        <td th:text="${message.content}"></td>
+                        <td th:text="${message.author}"></td>
+                        <td th:text="${message.recipient}"></td>
+                        <td th:text="${message.typeOfContent}"></td>
+                        <td th:text="${message.sizeOfContent}"></td>
+                        <td>
+                            <a th:href="${message.linkToContent}" target="_blank">View</a>
+                        </td>
+                        <td>
+                            U: <span th:text="${message.underrated}"></span>,
+                            R: <span th:text="${message.rated}"></span>,
+                            O: <span th:text="${message.overrated}"></span>
+                        </td>
+                        <td>
+                            GA: <span th:text="${message.generalAudiences}"></span>,
+                            PG: <span th:text="${message.parentalGuidanceSuggested}"></span>,
+                            R: <span th:text="${message.restricted}"></span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+        <script th:src="@{/js/table.js}"></script>
+    </div>
+</body>
+
+</html>

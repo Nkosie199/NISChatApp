@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}"
+  lang="en"
+>
+  <head>
+    <title>Home</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <div class="jumbotron main-content">
+        <h1>Welcome to Mynger Backend</h1>
+        <p>Our mission statement is to end human suffering.</p>
+      </div>
+      <div class="container">
+        <h3>What do you want to do?</h3>
+        <ul>
+          <li><a th:href="@{/users}">View Users</a></li>
+          <li><a th:href="@{/messages}">View Messages</a></li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

@@ -18,39 +18,26 @@ repositories {
 }
 
 dependencies {
-    // Spring Boot Starter for core Spring functionality
     implementation 'org.springframework.boot:spring-boot-starter'
-
-    // Spring Boot Starter Test for testing support
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-
-    // JUnit Platform Launcher for running JUnit tests
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-    // Spring Boot Starter Web for building RESTful APIs
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    
+    runtimeOnly 'com.h2database:h2' // Or use PostgreSQL/MySQL for production
 
-    // Optional: Spring Boot DevTools for hot-reloading during development
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-    // Optional: Lombok for reducing boilerplate code
+    // Lombok (latest stable version)
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
 
-    // Optional: H2 Database for in-memory database during development/testing
-    runtimeOnly 'com.h2database:h2'
-
-    // Optional: Spring Boot Starter Actuator for monitoring and metrics
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-
-    implementation 'org.springframework.boot:spring-boot-starter-websocket:3.4.2'
-    implementation 'org.springframework.boot:spring-boot-starter-web:3.4.2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
-
 
 tasks.named('test') {
 	useJUnitPlatform()
