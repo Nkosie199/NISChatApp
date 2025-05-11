@@ -18,3 +18,10 @@ body {
 .form-row{
     padding-top: 8px;
 }
+
+.truncate {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

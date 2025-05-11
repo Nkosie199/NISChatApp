@@ -15,6 +15,8 @@ import com.mynger.mychatapp.repository.MessageRepository;
 public class MessageService {
     @Autowired
     private MessageRepository messageRepository;
+    @Autowired
+    private ServerService serverService;
 
     public List<MessageDTO> getAll() {
         return messageRepository.findAll().stream()
@@ -30,8 +32,12 @@ public class MessageService {
         return messageRepository.findByAuthor(author).orElseThrow(() -> new BadRequestException("Message not found"));
     }
 
-    public Message createMessage(MessageDTO messageDTO) {
+    public Message createMessage(MessageDTO messageDTO) throws Exception {
         Message message = MessageMapper.toDefaultEntity(messageDTO);
-        return messageRepository.save(message);
+        if (message.getRecipient().isEmpty()) {
+            return messageRepository.save(message);
+        } else {
+            return serverService.addEncryptedMessage(message);
+        }
     }
 }

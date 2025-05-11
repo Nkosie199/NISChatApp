@@ -40,7 +40,7 @@ public class MessageController {
     }
 
     @PostMapping("/add")
-    public String handleAdd(@ModelAttribute("message") MessageDTO message) {
+    public String handleAdd(@ModelAttribute("message") MessageDTO message) throws Exception {
         messageService.createMessage(message);
         return "redirect:/messages";
     }

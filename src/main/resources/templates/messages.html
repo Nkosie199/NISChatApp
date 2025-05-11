@@ -38,7 +38,7 @@
                     <tr th:each="message, iterStat : ${messages}">
                         <td th:text="${iterStat.index + 1}"></td>
                         <td th:text="${message.title}"></td>
-                        <td th:text="${message.content}"></td>
+                        <td class="truncate" th:text="${message.content}"></td>
                         <td th:text="${message.author}"></td>
                         <td th:text="${message.recipient}"></td>
                         <td th:text="${message.typeOfContent}"></td>
