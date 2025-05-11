@@ -11,22 +11,36 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ReceiverUtils {
-    public static String getDecryptedAESMessage(
+
+  public static String recipientDecryptsMessage(String messagetoreceiver[], PublicKey senderpubKey,
+      PublicKey receiverpubKey, PrivateKey receiverprivateKey) {
+    try {
+      String nxtMsg = getDecryptedAESMessage(
+          messagetoreceiver,
+          senderpubKey,
+          receiverpubKey,
+          receiverprivateKey);
+      return nxtMsg;
+    } catch (Exception ex) {
+      log.error(ex.getMessage());
+    }
+    return "";
+  }
+
+  public static String getDecryptedAESMessage(
       String messagetoreceiver[],
       PublicKey senderpubKey,
-      PrivateKey senderprivateKey,
+      // PrivateKey senderprivateKey,
       PublicKey receiverpubKey,
       PrivateKey receiverprivateKey) throws Exception {
     // Receiver receives the message messagetoreceiver[] with messagetoreceiver[2]
     // as secret key encrypted with receiver pub key
     // Receiver decrypts the messagetoreceiver[2] with his/her privatekey
-    String receiverencodedsecretkey = RSAUtils.decryptRSA(
-        receiverpubKey,
+    String receiverEncodedSecretKey = RSAUtils.decryptRSAWithPrivateKey(
         receiverprivateKey,
-        messagetoreceiver[2],
-        1);
+        messagetoreceiver[2]);
     // Key after decryption is in base64 encoded form
-    byte[] decodedKey = Base64.getDecoder().decode(receiverencodedsecretkey);
+    byte[] decodedKey = Base64.getDecoder().decode(receiverEncodedSecretKey);
     SecretKey originalKey = new SecretKeySpec(
         decodedKey,
         0,
@@ -51,19 +65,16 @@ public class ReceiverUtils {
     // Message has been received and is in unzipstring but check the digital
     // signature of the sender i.e. verify the hash with senderpubkey
     // So decrypting the encrypted hash in unzipstring with sender pub key
-    String receivedhash = RSAUtils.decryptRSA(
+    String receivedhash = RSAUtils.decryptRSAWithPubKey(
         senderpubKey,
-        senderprivateKey,
-        unzipstring[1],
-        0);
+        unzipstring[1]);
     // Calculating SHA512 at receiver side of message
     String calculatedhash = HashingUtils.sha512(unzipstring[0]);
     if (receivedhash.equalsIgnoreCase(calculatedhash)) {
-        log.info("Correct has received!");
+      log.info("Correct has received!");
     }
 
     return unzipstring[0];
   }
-
 
 }

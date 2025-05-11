@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.mynger.mychatapp.dto.MessageDTO;
+import com.mynger.mychatapp.mapper.MessageMapper;
 import com.mynger.mychatapp.model.Message;
 import com.mynger.mychatapp.repository.MessageRepository;
 
@@ -17,30 +18,20 @@ public class MessageService {
 
     public List<MessageDTO> getAll() {
         return messageRepository.findAll().stream()
-                .map(message -> MessageDTO.builder()
-                        .title(message.getTitle())
-                        .content(message.getContent())
-                        .author(message.getAuthor())
-                        .linkToContent(message.getLinkToContent())
-                        .timeOfUpload(message.getTimeOfUpload())
-                        .typeOfContent(message.getTypeOfContent())
-                        .sizeOfContent(message.getSizeOfContent())
-                        .recipient(message.getRecipient())
-                        .underrated(message.getUnderrated())
-                        .rated(message.getRated())
-                        .overrated(message.getOverrated())
-                        .generalAudiences(message.getGeneralAudiences())
-                        .parentalGuidanceSuggested(message.getParentalGuidanceSuggested())
-                        .restricted(message.getRestricted())
-                        .build())
+                .map(message -> MessageMapper.toDTO(message))
                 .toList();
+    }
+
+    public Message getByMessageId(Long id) throws BadRequestException {
+        return messageRepository.findById(id).orElseThrow(() -> new BadRequestException("Message not found"));
     }
 
     public Message getByMessageAuthor(String author) throws BadRequestException {
         return messageRepository.findByAuthor(author).orElseThrow(() -> new BadRequestException("Message not found"));
     }
 
-    public Message createMessage(Message message) {
+    public Message createMessage(MessageDTO messageDTO) {
+        Message message = MessageMapper.toDefaultEntity(messageDTO);
         return messageRepository.save(message);
     }
 }

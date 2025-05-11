@@ -15,8 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor
 public class Client {
   private String username;
-  private PublicKey publicKey;
-  private PrivateKey privateKey;
+  private KeyPair keyPair;
 
   public Client(String username) {
     this.username = username;
@@ -24,16 +23,18 @@ public class Client {
   }
 
   public void setKeys() {
-      try {
-          KeyPair keyPair = ChannelUtils.buildRSAKeyPair();
-          publicKey = keyPair.getPublic();
-          privateKey = keyPair.getPrivate();
-      } catch (Exception ex) {
-          log.error(ex.getMessage());
-      }
+    try {
+      keyPair = ChannelUtils.buildRSAKeyPair();
+    } catch (Exception ex) {
+      log.error(ex.getMessage());
+    }
   }
 
   public PublicKey getPublicKey() {
-      return publicKey;
+    return keyPair.getPublic();
+  }
+
+  public PrivateKey getPrivateKey() {
+    return keyPair.getPrivate();
   }
 }
